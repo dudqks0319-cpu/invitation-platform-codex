@@ -1,0 +1,49 @@
+<svg width="1200" height="1800" viewBox="0 0 1200 1800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="1800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF4E6"/>
+      <stop offset="1" stop-color="#FFE0F0"/>
+    </linearGradient>
+    <radialGradient id="light" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 260) rotate(90) scale(260 420)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1800" fill="url(#bg)"/>
+  <rect width="1200" height="1800" fill="url(#light)"/>
+
+  <g opacity="0.85">
+    <circle cx="180" cy="220" r="26" fill="#FFD166"/>
+    <circle cx="980" cy="160" r="20" fill="#7BDFF2"/>
+    <circle cx="1030" cy="310" r="16" fill="#CDB4DB"/>
+    <circle cx="260" cy="340" r="14" fill="#95D5B2"/>
+    <circle cx="560" cy="120" r="12" fill="#FFC8DD"/>
+  </g>
+
+  <g transform="translate(220,430)">
+    <ellipse cx="180" cy="590" rx="170" ry="56" fill="#000" opacity="0.08"/>
+    <circle cx="180" cy="260" r="118" fill="#FFE0BD"/>
+    <rect x="66" y="390" width="228" height="230" rx="102" fill="#6D6875"/>
+    <circle cx="132" cy="248" r="12" fill="#2D3142"/>
+    <circle cx="228" cy="248" r="12" fill="#2D3142"/>
+    <path d="M133 317C150 337 208 337 226 317" stroke="#E76F51" stroke-width="12" stroke-linecap="round"/>
+    <path d="M70 184C86 130 140 88 180 88C222 88 275 132 290 184" stroke="#5C4D7D" stroke-width="24" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(700,500)">
+    <ellipse cx="180" cy="590" rx="170" ry="56" fill="#000" opacity="0.08"/>
+    <circle cx="180" cy="260" r="118" fill="#F6D1B1"/>
+    <rect x="66" y="390" width="228" height="230" rx="102" fill="#457B9D"/>
+    <circle cx="132" cy="248" r="12" fill="#2D3142"/>
+    <circle cx="228" cy="248" r="12" fill="#2D3142"/>
+    <path d="M133 317C150 337 208 337 226 317" stroke="#E76F51" stroke-width="12" stroke-linecap="round"/>
+    <path d="M72 180C83 130 130 98 180 98C236 98 274 134 288 181" stroke="#33415C" stroke-width="24" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(600,1220)">
+    <path d="M0 0L42 84L132 98L66 160L80 250L0 206L-80 250L-66 160L-132 98L-42 84L0 0Z" fill="#FFD166"/>
+  </g>
+
+  <text x="600" y="1520" text-anchor="middle" font-family="'Pretendard','Noto Sans KR',sans-serif" font-size="68" fill="#4A4E69" font-weight="700">Special Invitation</text>
+  <text x="600" y="1600" text-anchor="middle" font-family="'Pretendard','Noto Sans KR',sans-serif" font-size="34" fill="#6C757D">캐릭터 테마 · 행사 분위기를 밝게</text>
+</svg>

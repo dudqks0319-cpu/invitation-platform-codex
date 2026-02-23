@@ -1,0 +1,49 @@
+{
+  "invitations": [
+    {
+      "id": "inv_b6291a507c041ebd",
+      "slug": "TJv4MNZ",
+      "eventType": "wedding",
+      "templateId": "wedding-1",
+      "title": "테스트 결혼식 초대",
+      "hostPrimary": "김영빈",
+      "hostSecondary": "이하나",
+      "greeting": "축하해주세요",
+      "eventDateTime": "2026-04-01T05:00:00.000Z",
+      "rsvpDeadline": "2026-03-20T00:00:00.000Z",
+      "venueName": "라움아트센터",
+      "address": "서울 강남구 언주로 564",
+      "contactPhone": "010-1111-2222",
+      "contactPhone2": "010-3333-4444",
+      "mapProvider": "kakao",
+      "coords": {
+        "lat": 37.5229,
+        "lng": 127.037
+      },
+      "showAccount": true,
+      "accounts": [
+        {
+          "bank": "국민",
+          "owner": "김영빈",
+          "number": "123-45-678901"
+        }
+      ],
+      "showQr": true,
+      "createdAt": "2026-02-23T10:51:25.544Z",
+      "updatedAt": "2026-02-23T10:51:25.544Z"
+    }
+  ],
+  "rsvps": [
+    {
+      "id": "rsvp_7eaa5117165fcf8a",
+      "invitationId": "inv_b6291a507c041ebd",
+      "name": "홍길동",
+      "phone": "010-5555-6666",
+      "attending": true,
+      "guests": 2,
+      "message": "축하드려요",
+      "createdAt": "2026-02-23T10:51:40.791Z",
+      "updatedAt": "2026-02-23T10:51:40.791Z"
+    }
+  ]
+}

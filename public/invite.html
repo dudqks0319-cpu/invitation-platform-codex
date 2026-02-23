@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>모바일 초대장</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="view-only">
+    <main class="layout">
+      <section class="preview-panel">
+        <article class="invite-card" id="inviteCard">
+          <div id="hero" class="hero">
+            <div class="hero-dim"></div>
+            <div class="hero-content">
+              <span id="badge" class="badge">EVENT</span>
+              <h3 id="title">초대장</h3>
+              <p id="hosts">주인공</p>
+              <p id="eventDate">행사 일시</p>
+            </div>
+          </div>
+
+          <div class="invite-body">
+            <section>
+              <h4>💌 인사말</h4>
+              <p id="greeting" class="message"></p>
+            </section>
+
+            <section>
+              <h4>📌 행사 정보</h4>
+              <ul class="info-list">
+                <li><strong>장소</strong><span id="venue"></span></li>
+                <li><strong>주소</strong><span id="address"></span></li>
+                <li><strong>연락처</strong><span id="contacts"></span></li>
+                <li><strong>RSVP</strong><span id="rsvpDeadline"></span></li>
+              </ul>
+            </section>
+
+            <section>
+              <h4>🗺️ 지도</h4>
+              <iframe id="mapFrame" class="map-frame" loading="lazy"></iframe>
+              <div class="map-links">
+                <a id="primaryRoute" target="_blank" rel="noreferrer">기본 지도</a>
+                <a id="kakaoRoute" target="_blank" rel="noreferrer">카카오맵</a>
+                <a id="naverRoute" target="_blank" rel="noreferrer">네이버지도</a>
+                <a id="googleRoute" target="_blank" rel="noreferrer">구글지도</a>
+              </div>
+            </section>
+
+            <section id="accountSec">
+              <h4>💳 마음 전하실 곳</h4>
+              <ul id="accountList" class="account-list"></ul>
+            </section>
+
+            <section id="qrSec">
+              <h4>🔳 QR 코드</h4>
+              <div id="qrCode" class="qr-box"></div>
+            </section>
+
+            <section>
+              <h4>📝 참석 여부 회신 (RSVP)</h4>
+              <form id="rsvpForm" class="rsvp-form">
+                <div class="row two">
+                  <label class="field">
+                    <span>이름 *</span>
+                    <input id="rsvpName" type="text" required />
+                  </label>
+                  <label class="field">
+                    <span>연락처 *</span>
+                    <input id="rsvpPhone" type="tel" required placeholder="010-1234-5678" />
+                  </label>
+                </div>
+
+                <div class="row two">
+                  <div class="field">
+                    <span>참석 여부</span>
+                    <div class="inline">
+                      <label><input type="radio" name="attending" value="yes" checked /> 참석</label>
+                      <label><input type="radio" name="attending" value="no" /> 불참</label>
+                    </div>
+                  </div>
+
+                  <label class="field">
+                    <span>동반 인원</span>
+                    <input id="rsvpGuests" type="number" min="0" value="1" />
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>메시지 (선택)</span>
+                  <textarea id="rsvpMessage" rows="3" placeholder="축하 메시지를 남겨주세요"></textarea>
+                </label>
+
+                <div class="actions">
+                  <button class="btn primary" type="submit">RSVP 제출</button>
+                </div>
+              </form>
+              <p id="rsvpStatus" class="status"></p>
+            </section>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="/js/templates.js"></script>
+    <script src="/js/invite-view.js"></script>
+  </body>
+</html>

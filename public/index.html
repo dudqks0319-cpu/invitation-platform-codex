@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>초대장 플랫폼 (codex버전)</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>🎉 초대장 플랫폼 (codex버전)</h1>
+      <p>
+        짧은 링크 + 서버 저장 구조로 개인정보가 URL에 노출되지 않게 설계했습니다.
+        결혼식, 돌잔치, 집들이, 칠순/고희, 결혼전모임을 한 번에 제작할 수 있습니다.
+      </p>
+      <p class="notice">
+        비판적 개선 반영: URL 민감정보 제거 · 관리자 대시보드 · RSVP 관리 · 지도 정확도(좌표 우선) · 카카오 공유 fallback
+      </p>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <h2>⚙️ 초대장 제작</h2>
+
+        <div class="group">
+          <label class="field">
+            <span>이벤트 종류</span>
+            <select id="eventType">
+              <option value="wedding">결혼식</option>
+              <option value="dol">돌잔치</option>
+              <option value="house">집들이</option>
+              <option value="seventy">칠순/고희</option>
+              <option value="pre">결혼전모임</option>
+            </select>
+          </label>
+
+          <p class="group-title">🎨 템플릿 선택 (이벤트별 5종)</p>
+          <div id="templateGrid" class="template-grid"></div>
+        </div>
+
+        <div class="group">
+          <p class="group-title">기본 정보</p>
+
+          <label class="field">
+            <span>초대장 제목</span>
+            <input id="title" type="text" placeholder="예: 영빈님의 결혼식에 초대합니다" />
+          </label>
+
+          <div class="row two">
+            <label class="field">
+              <span id="hostLabel1">신랑</span>
+              <input id="hostPrimary" type="text" placeholder="이름" />
+            </label>
+            <label class="field">
+              <span id="hostLabel2">신부</span>
+              <input id="hostSecondary" type="text" placeholder="이름 (선택)" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>인사말</span>
+            <textarea id="greeting" rows="4" placeholder="초대 메시지를 입력하세요"></textarea>
+          </label>
+
+          <div class="row two">
+            <label class="field">
+              <span>행사 일시</span>
+              <input id="eventDateTime" type="datetime-local" />
+            </label>
+            <label class="field">
+              <span>RSVP 마감일 (선택)</span>
+              <input id="rsvpDeadline" type="date" />
+            </label>
+          </div>
+        </div>
+
+        <div class="group">
+          <p class="group-title">📍 장소 / 연락처</p>
+
+          <label class="field">
+            <span>장소명</span>
+            <input id="venueName" type="text" placeholder="예: 라움아트센터 2층" />
+          </label>
+
+          <label class="field">
+            <span>주소</span>
+            <input id="address" type="text" placeholder="예: 서울 강남구 언주로 564" />
+          </label>
+
+          <div class="row two">
+            <label class="field">
+              <span>연락처(대표)</span>
+              <input id="contactPhone" type="tel" placeholder="010-1234-5678" />
+            </label>
+            <label class="field">
+              <span>연락처(보조)</span>
+              <input id="contactPhone2" type="tel" placeholder="010-0000-0000" />
+            </label>
+          </div>
+
+          <div class="row two">
+            <label class="field">
+              <span>지도 기본 열기</span>
+              <select id="mapProvider">
+                <option value="kakao">카카오맵</option>
+                <option value="naver">네이버지도</option>
+                <option value="google">구글지도</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>지도 좌표(선택, lat,lng)</span>
+              <input id="coords" type="text" placeholder="예: 37.5229,127.0370" />
+            </label>
+          </div>
+          <p class="small">주소 오타 리스크를 줄이기 위해 좌표 입력 시 좌표를 우선 사용합니다.</p>
+        </div>
+
+        <div class="group">
+          <p class="group-title">💳 계좌 정보</p>
+          <label class="check">
+            <input id="showAccount" type="checkbox" checked />
+            <span>계좌 섹션 표시</span>
+          </label>
+
+          <div id="accountArea">
+            <div class="account-row">
+              <input class="acc-bank" type="text" placeholder="은행" />
+              <input class="acc-owner" type="text" placeholder="예금주" />
+              <input class="acc-number" type="text" placeholder="계좌번호" />
+            </div>
+            <div class="account-row">
+              <input class="acc-bank" type="text" placeholder="은행" />
+              <input class="acc-owner" type="text" placeholder="예금주" />
+              <input class="acc-number" type="text" placeholder="계좌번호" />
+            </div>
+            <div class="account-row">
+              <input class="acc-bank" type="text" placeholder="은행" />
+              <input class="acc-owner" type="text" placeholder="예금주" />
+              <input class="acc-number" type="text" placeholder="계좌번호" />
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <p class="group-title">🔗 공유</p>
+
+          <label class="check">
+            <input id="showQr" type="checkbox" checked />
+            <span>QR 코드 표시</span>
+          </label>
+
+          <label class="field">
+            <span>카카오 JavaScript Key (선택)</span>
+            <input id="kakaoJsKey" type="text" placeholder="키 미입력 시 링크 복사/시스템 공유로 fallback" />
+          </label>
+
+          <div class="actions">
+            <button id="saveBtn" class="btn primary">서버 저장 + 짧은 링크 생성</button>
+            <button id="copyBtn" class="btn">링크 복사</button>
+            <button id="openBtn" class="btn">초대장 열기</button>
+            <button id="kakaoBtn" class="btn kakao">카카오톡 공유</button>
+          </div>
+
+          <label class="field">
+            <span>짧은 링크</span>
+            <input id="shortUrl" type="text" readonly placeholder="먼저 저장하세요" />
+          </label>
+
+          <p id="builderStatus" class="status"></p>
+        </div>
+      </section>
+
+      <section class="preview-panel">
+        <h2>📱 미리보기</h2>
+
+        <article class="invite-card">
+          <div id="previewHero" class="hero">
+            <div class="hero-dim"></div>
+            <div class="hero-content">
+              <span id="previewBadge" class="badge">WEDDING</span>
+              <h3 id="previewTitle">초대장 제목</h3>
+              <p id="previewHosts">주인공</p>
+              <p id="previewDate">행사 일시</p>
+            </div>
+          </div>
+
+          <div class="invite-body">
+            <section>
+              <h4>💌 인사말</h4>
+              <p id="previewGreeting" class="message"></p>
+            </section>
+
+            <section>
+              <h4>📌 행사 정보</h4>
+              <ul class="info-list">
+                <li><strong>장소</strong><span id="previewVenue"></span></li>
+                <li><strong>주소</strong><span id="previewAddress"></span></li>
+                <li><strong>연락처</strong><span id="previewContact"></span></li>
+                <li><strong>RSVP</strong><span id="previewRsvp"></span></li>
+              </ul>
+            </section>
+
+            <section>
+              <h4>🗺️ 지도</h4>
+              <iframe id="previewMap" class="map-frame" loading="lazy"></iframe>
+              <div class="map-links">
+                <a id="routePrimary" target="_blank" rel="noreferrer">기본 지도</a>
+                <a id="routeKakao" target="_blank" rel="noreferrer">카카오맵</a>
+                <a id="routeNaver" target="_blank" rel="noreferrer">네이버지도</a>
+                <a id="routeGoogle" target="_blank" rel="noreferrer">구글지도</a>
+              </div>
+            </section>
+
+            <section id="previewAccountSec">
+              <h4>💳 마음 전하실 곳</h4>
+              <ul id="previewAccounts" class="account-list"></ul>
+            </section>
+
+            <section id="previewQrSec">
+              <h4>🔳 QR 코드</h4>
+              <div id="previewQr" class="qr-box"></div>
+            </section>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>
+        관리자 대시보드: <a href="/admin" target="_blank" rel="noreferrer">/admin</a>
+        · 공개 초대장 형식: <code>/i/{shortSlug}</code>
+      </p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+    <script src="/js/templates.js"></script>
+    <script src="/js/builder.js"></script>
+  </body>
+</html>

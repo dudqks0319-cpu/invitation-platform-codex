@@ -1,0 +1,17 @@
+{
+  "name": "invitation-platform-codex",
+  "version": "1.0.0",
+  "private": true,
+  "description": "초대장플랫폼 (codex버전) - 짧은 링크 + 서버 저장 + 관리자 대시보드",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
