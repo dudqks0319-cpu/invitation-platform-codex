@@ -7,6 +7,7 @@
     title: document.getElementById("title"),
     hosts: document.getElementById("hosts"),
     eventDate: document.getElementById("eventDate"),
+    templateMeta: document.getElementById("templateMeta"),
     greeting: document.getElementById("greeting"),
 
     venue: document.getElementById("venue"),
@@ -133,6 +134,12 @@
     const hostText = [data.hostPrimary, data.hostSecondary].filter(Boolean).join(" · ");
     els.hosts.textContent = hostText || `${meta.hostLabels[0]} 입력`;
     els.eventDate.textContent = formatDateTime(data.eventDateTime);
+
+    const previewBadges = Array.isArray(template.labels) && template.labels.length
+      ? template.labels.slice(0, 2).join(" · ")
+      : "SET";
+    els.templateMeta.textContent = `${template.modelCode || "MC0000"} · ${previewBadges}`;
+
     els.greeting.textContent = data.greeting || meta.defaultGreeting;
 
     els.venue.textContent = data.venueName || "장소 미정";

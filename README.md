@@ -77,6 +77,7 @@ Vercel 운영에서는 `BLOB_READ_WRITE_TOKEN` 연결을 권장합니다.
 
 - 현재 기본 구조는 JSON 저장 기반이며,
   Vercel에서는 Blob 토큰이 연결되면 Blob 저장으로 동작합니다.
+- Blob 모드에서는 버전 스냅샷 방식으로 저장해 CDN 캐시 이슈를 줄였습니다(최신 버전 우선 조회).
 - **Blob 토큰이 없는 Vercel 배포는 `/tmp` 휘발성 저장**이므로 데이터 유실 위험이 큽니다.
 - 트래픽/확장성 관점에서는 PostgreSQL/Supabase 같은 DB 전환을 권장합니다.
 - RSVP API에는 기본적인 IP rate limit이 적용되어 있습니다.

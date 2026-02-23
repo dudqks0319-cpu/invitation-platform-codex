@@ -219,6 +219,17 @@ textarea {
   color: #3d4b69;
 }
 
+.list-note {
+  align-self: end;
+  border: 1px dashed #d5ddef;
+  border-radius: 10px;
+  background: #f8faff;
+  color: #627191;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 10px;
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -227,7 +238,7 @@ textarea {
 
 .template-card {
   border: 1px solid #dce4f3;
-  border-radius: 12px;
+  border-radius: 13px;
   overflow: hidden;
   background: #fff;
   padding: 0;
@@ -249,7 +260,7 @@ textarea {
 
 .template-thumb {
   width: 100%;
-  aspect-ratio: 1.08;
+  aspect-ratio: 1.04;
   position: relative;
   border-bottom: 1px solid #e6ecf7;
 }
@@ -278,6 +289,14 @@ textarea {
 
 .template-meta {
   padding: 9px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.template-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
 }
 
 .template-chip {
@@ -287,12 +306,19 @@ textarea {
   border: 1px solid #d7def0;
   border-radius: 999px;
   padding: 2px 8px;
-  margin-bottom: 6px;
   background: #f9fbff;
   font-weight: 700;
 }
 
+.template-code {
+  font-size: 10px;
+  color: #7281a3;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
 .template-name {
+  margin-top: 6px;
   font-size: 12px;
   font-weight: 800;
   color: #273452;
@@ -302,6 +328,42 @@ textarea {
   margin-top: 3px;
   color: var(--muted);
   font-size: 11px;
+}
+
+.template-pricing {
+  margin-top: 7px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.price-sale {
+  font-size: 11px;
+  font-weight: 800;
+  color: #2f4067;
+}
+
+.price-base {
+  font-size: 10px;
+  color: #8b97b3;
+  text-decoration: line-through;
+}
+
+.template-tags {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.template-tags span {
+  border: 1px solid #e1e7f6;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #63739a;
+  background: #f9fbff;
 }
 
 .account-row {
@@ -444,6 +506,17 @@ textarea {
 .hero p {
   margin: 0;
   font-size: 15px;
+}
+
+.hero-meta {
+  width: fit-content;
+  margin-top: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(12, 20, 42, 0.28);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
 }
 
 .invite-body {
@@ -689,6 +762,10 @@ body.view-only .layout {
 
   .account-row {
     grid-template-columns: 1fr;
+  }
+
+  .list-note {
+    align-self: stretch;
   }
 
   .template-grid {

@@ -2,7 +2,12 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { get: blobGet, put: blobPut } = require("@vercel/blob");
+const {
+  get: blobGet,
+  put: blobPut,
+  list: blobList,
+  del: blobDel,
+} = require("@vercel/blob");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -39,7 +44,9 @@ const rsvpRateMap = new Map();
 const DEFAULT_STORE = Object.freeze({ invitations: [], rsvps: [] });
 const USE_BLOB_STORE = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const BLOB_STORE_PATH = process.env.BLOB_STORE_PATH || "invitation-platform/store.json";
+const BLOB_STORE_VERSION_PREFIX = `${BLOB_STORE_PATH}.v`;
 const BLOB_ACCESS = process.env.BLOB_ACCESS === "public" ? "public" : "private";
+const BLOB_HISTORY_LIMIT = 30;
 
 let storeWriteChain = Promise.resolve();
 
@@ -93,9 +100,52 @@ async function streamToString(stream) {
   return Buffer.concat(chunks).toString("utf-8");
 }
 
+async function getLatestBlobPathname() {
+  try {
+    const listed = await blobList({
+      prefix: BLOB_STORE_VERSION_PREFIX,
+      limit: 200,
+    });
+
+    if (Array.isArray(listed.blobs) && listed.blobs.length) {
+      const sorted = listed.blobs
+        .slice()
+        .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      return sorted[0].pathname;
+    }
+  } catch (_) {
+    // noop
+  }
+
+  return BLOB_STORE_PATH;
+}
+
+async function pruneBlobHistory() {
+  try {
+    const listed = await blobList({
+      prefix: BLOB_STORE_VERSION_PREFIX,
+      limit: 200,
+    });
+
+    if (!Array.isArray(listed.blobs) || listed.blobs.length <= BLOB_HISTORY_LIMIT) return;
+
+    const sorted = listed.blobs
+      .slice()
+      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
+    const removable = sorted.slice(BLOB_HISTORY_LIMIT).map((item) => item.url);
+    if (removable.length) {
+      await blobDel(removable);
+    }
+  } catch (_) {
+    // best effort only
+  }
+}
+
 async function readStoreFromBlob() {
   try {
-    const result = await blobGet(BLOB_STORE_PATH, {
+    const targetPathname = await getLatestBlobPathname();
+    const result = await blobGet(targetPathname, {
       access: BLOB_ACCESS,
       useCache: false,
     });
@@ -121,13 +171,17 @@ async function readStoreFromBlob() {
 
 async function writeStoreToBlob(store) {
   const normalized = normalizeStore(store);
-  await blobPut(BLOB_STORE_PATH, JSON.stringify(normalized, null, 2), {
+  const versionedPath = `${BLOB_STORE_VERSION_PREFIX}${Date.now()}-${crypto.randomBytes(4).toString("hex")}.json`;
+
+  await blobPut(versionedPath, JSON.stringify(normalized, null, 2), {
     access: BLOB_ACCESS,
     addRandomSuffix: false,
-    allowOverwrite: true,
+    allowOverwrite: false,
     contentType: "application/json",
     cacheControlMaxAge: 0,
   });
+
+  pruneBlobHistory();
 }
 
 function readStoreFromFile() {
@@ -609,7 +663,9 @@ app.get("*", (_, res) => {
 
 app.listen(PORT, () => {
   ensureStoreFile();
-  const mode = USE_BLOB_STORE ? `blob:${BLOB_STORE_PATH}` : `file:${STORE_PATH}`;
+  const mode = USE_BLOB_STORE
+    ? `blob:${BLOB_STORE_PATH} (access:${BLOB_ACCESS})`
+    : `file:${STORE_PATH}`;
   // eslint-disable-next-line no-console
   console.log(`[invitation-platform-codex] listening on http://localhost:${PORT} (${mode})`);
 });

@@ -45,7 +45,22 @@
             </select>
           </label>
 
-          <p class="group-title">🎨 템플릿 선택 (이벤트별 5종)</p>
+          <p class="group-title">🎨 SET 모바일초대장 선택 (이벤트별 5종)</p>
+          <div class="row two" style="margin-bottom:10px;">
+            <label class="field" style="margin:0;">
+              <span>리스트 필터</span>
+              <select id="templateFilter">
+                <option value="all">전체</option>
+                <option value="set">SET</option>
+                <option value="photo">PHOTO</option>
+                <option value="mset">MSET</option>
+                <option value="best">BEST</option>
+                <option value="new">NEW</option>
+                <option value="special">SPECIAL</option>
+              </select>
+            </label>
+            <div class="list-note">바른손Mcard 상품 리스트 느낌으로 재구성한 카드 UI</div>
+          </div>
           <div id="templateGrid" class="template-grid"></div>
         </div>
 
@@ -193,6 +208,7 @@
               <h3 id="previewTitle">초대장 제목</h3>
               <p id="previewHosts">주인공</p>
               <p id="previewDate">행사 일시</p>
+              <p id="previewTemplateMeta" class="hero-meta">MC0000 · SET</p>
             </div>
           </div>
 

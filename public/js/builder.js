@@ -3,6 +3,7 @@
 
   const els = {
     eventType: document.getElementById("eventType"),
+    templateFilter: document.getElementById("templateFilter"),
     templateGrid: document.getElementById("templateGrid"),
 
     title: document.getElementById("title"),
@@ -41,6 +42,7 @@
     previewTitle: document.getElementById("previewTitle"),
     previewHosts: document.getElementById("previewHosts"),
     previewDate: document.getElementById("previewDate"),
+    previewTemplateMeta: document.getElementById("previewTemplateMeta"),
     previewGreeting: document.getElementById("previewGreeting"),
     previewVenue: document.getElementById("previewVenue"),
     previewAddress: document.getElementById("previewAddress"),
@@ -93,6 +95,25 @@
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  function formatWon(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return "-";
+    return `${n.toLocaleString("ko-KR")}원`;
+  }
+
+  function currentTemplateFilter() {
+    return String(els.templateFilter?.value || "all").trim().toUpperCase();
+  }
+
+  function matchesTemplateFilter(template, filter) {
+    if (!template) return false;
+    if (filter === "ALL") return true;
+    const labels = Array.isArray(template.labels)
+      ? template.labels.map((item) => String(item || "").trim().toUpperCase())
+      : [];
+    return labels.includes(filter);
   }
 
   function getTemplateList(eventType) {
@@ -187,25 +208,66 @@
 
   function renderTemplateGrid(eventType) {
     const list = getTemplateList(eventType);
-    const selected = getCurrentTemplate(eventType).id;
+    const filter = currentTemplateFilter();
+
+    const filtered = list.filter((template) => matchesTemplateFilter(template, filter));
+    const cards = filtered.length ? filtered : list;
+
+    let activeId = getCurrentTemplate(eventType).id;
+    if (!cards.some((item) => item.id === activeId)) {
+      activeId = cards[0]?.id || list[0]?.id;
+      selectedTemplateByEvent[eventType] = activeId;
+    }
 
     els.templateGrid.innerHTML = "";
 
-    list.forEach((template) => {
+    cards.forEach((template) => {
       const card = document.createElement("button");
       card.type = "button";
-      card.className = `template-card${template.id === selected ? " active" : ""}`;
+      card.className = `template-card${template.id === activeId ? " active" : ""}`;
 
       const thumb = document.createElement("div");
       thumb.className = "template-thumb";
       applyTemplateSurface(thumb, template);
 
+      const badges = Array.isArray(template.labels) ? template.labels.slice(0, 3) : [];
+      const discountRate = Number(template.basePrice) > 0
+        ? Math.max(0, Math.round(((Number(template.basePrice) - Number(template.salePrice)) / Number(template.basePrice)) * 100))
+        : 0;
+
       const meta = document.createElement("div");
       meta.className = "template-meta";
-      meta.innerHTML = `<div class="template-chip"></div><div class="template-name"></div><div class="template-desc"></div>`;
+      meta.innerHTML = `
+        <div class="template-topline">
+          <div class="template-chip"></div>
+          <div class="template-code"></div>
+        </div>
+        <div class="template-name"></div>
+        <div class="template-desc"></div>
+        <div class="template-pricing">
+          <span class="price-sale"></span>
+          <span class="price-base"></span>
+        </div>
+        <div class="template-tags"></div>
+      `;
+
       meta.querySelector(".template-chip").textContent = template.market || "CURATED";
+      meta.querySelector(".template-code").textContent = template.modelCode || "MC0000";
       meta.querySelector(".template-name").textContent = template.name;
       meta.querySelector(".template-desc").textContent = template.desc;
+
+      const saleText = template.salePrice === 0
+        ? `100% ${formatWon(0)}`
+        : `${discountRate}% ${formatWon(template.salePrice)}`;
+      meta.querySelector(".price-sale").textContent = saleText;
+      meta.querySelector(".price-base").textContent = formatWon(template.basePrice);
+
+      const tagWrap = meta.querySelector(".template-tags");
+      badges.forEach((badge) => {
+        const span = document.createElement("span");
+        span.textContent = badge;
+        tagWrap.appendChild(span);
+      });
 
       card.appendChild(thumb);
       card.appendChild(meta);
@@ -255,6 +317,11 @@
     const hosts = [payload.hostPrimary, payload.hostSecondary].filter(Boolean).join(" · ");
     els.previewHosts.textContent = hosts || `${meta.hostLabels[0]} 입력`;
     els.previewDate.textContent = formatDateTime(payload.eventDateTime);
+
+    const previewBadges = Array.isArray(template.labels) && template.labels.length
+      ? template.labels.slice(0, 2).join(" · ")
+      : "SET";
+    els.previewTemplateMeta.textContent = `${template.modelCode || "MC0000"} · ${previewBadges}`;
 
     els.previewGreeting.textContent = payload.greeting;
     els.previewVenue.textContent = payload.venueName || "장소를 입력해 주세요";
@@ -466,6 +533,13 @@
       updatePreview();
       lastEventType = next;
     });
+
+    if (els.templateFilter) {
+      els.templateFilter.addEventListener("change", () => {
+        renderTemplateGrid(els.eventType.value);
+        updatePreview();
+      });
+    }
 
     const inputs = [
       els.title,
