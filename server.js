@@ -118,22 +118,22 @@ function sortBlobVersionsDesc(a, b) {
   return bUploaded - aUploaded;
 }
 
-async function getLatestBlobPathname() {
+async function getLatestBlobEntry() {
   try {
     const listed = await blobList({
-      prefix: BLOB_STORE_VERSION_PREFIX,
+      prefix: BLOB_STORE_PATH,
       limit: 200,
     });
 
     if (Array.isArray(listed.blobs) && listed.blobs.length) {
       const sorted = listed.blobs.slice().sort(sortBlobVersionsDesc);
-      return sorted[0].pathname;
+      return sorted[0];
     }
   } catch (_) {
     // noop
   }
 
-  return BLOB_STORE_PATH;
+  return null;
 }
 
 async function pruneBlobHistory() {
@@ -156,9 +156,35 @@ async function pruneBlobHistory() {
   }
 }
 
+function parseStoreRaw(raw) {
+  let parsed;
+  try {
+    parsed = JSON.parse(raw || "{}");
+  } catch (_) {
+    parsed = cloneDefaultStore();
+  }
+
+  return normalizeStore(parsed);
+}
+
 async function readStoreFromBlob() {
   try {
-    const targetPathname = await getLatestBlobPathname();
+    const latestEntry = await getLatestBlobEntry();
+
+    if (BLOB_ACCESS === "public" && latestEntry?.url) {
+      const response = await fetch(latestEntry.url, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        return cloneDefaultStore();
+      }
+
+      const raw = await response.text();
+      return parseStoreRaw(raw);
+    }
+
+    const targetPathname = latestEntry?.pathname || BLOB_STORE_PATH;
     const result = await blobGet(targetPathname, {
       access: BLOB_ACCESS,
       useCache: false,
@@ -169,15 +195,7 @@ async function readStoreFromBlob() {
     }
 
     const raw = await streamToString(result.stream);
-
-    let parsed;
-    try {
-      parsed = JSON.parse(raw || "{}");
-    } catch (_) {
-      parsed = cloneDefaultStore();
-    }
-
-    return normalizeStore(parsed);
+    return parseStoreRaw(raw);
   } catch (_) {
     return cloneDefaultStore();
   }
