@@ -107,6 +107,24 @@
     return list.find((t) => t.id === selectedTemplateByEvent[eventType]) || list[0];
   }
 
+  function applyTemplateSurface(element, template) {
+    element.style.backgroundImage = "none";
+    element.style.background = template?.background || "#ecf2ff";
+    element.style.backgroundSize = "cover";
+    element.style.backgroundPosition = "center";
+    element.style.backgroundRepeat = "no-repeat";
+
+    if (template?.image) {
+      element.style.backgroundImage = `url('${template.image}')`;
+    }
+
+    if (template?.market) {
+      element.dataset.market = template.market;
+    } else {
+      element.removeAttribute("data-market");
+    }
+  }
+
   function collectAccounts() {
     return els.accountRows
       .map((row) => {
@@ -180,11 +198,12 @@
 
       const thumb = document.createElement("div");
       thumb.className = "template-thumb";
-      thumb.style.backgroundImage = `url('${template.image}')`;
+      applyTemplateSurface(thumb, template);
 
       const meta = document.createElement("div");
       meta.className = "template-meta";
-      meta.innerHTML = `<div class="template-name"></div><div class="template-desc"></div>`;
+      meta.innerHTML = `<div class="template-chip"></div><div class="template-name"></div><div class="template-desc"></div>`;
+      meta.querySelector(".template-chip").textContent = template.market || "CURATED";
       meta.querySelector(".template-name").textContent = template.name;
       meta.querySelector(".template-desc").textContent = template.desc;
 
@@ -227,7 +246,7 @@
     els.hostLabel1.textContent = meta.hostLabels[0];
     els.hostLabel2.textContent = meta.hostLabels[1];
 
-    els.previewHero.style.backgroundImage = `url('${template.image}')`;
+    applyTemplateSurface(els.previewHero, template);
     els.previewBadge.textContent = meta.badge;
     els.previewBadge.style.background = `${template.accent}cc`;
     els.previewBadge.style.borderColor = template.accent;
@@ -397,7 +416,8 @@
 
       const payload = collectPayload();
       const template = getCurrentTemplate(payload.eventType);
-      const imageUrl = new URL(template.image, window.location.origin).toString();
+      const shareImagePath = template.image || "/assets/character/party-friends.svg";
+      const imageUrl = new URL(shareImagePath, window.location.origin).toString();
 
       window.Kakao.Share.sendDefault({
         objectType: "feed",

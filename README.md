@@ -10,7 +10,8 @@
 
 2. **서버 저장 구조**
    - 로컬 개발: `data/store.json` 파일 저장
-   - Vercel 배포: `BLOB_READ_WRITE_TOKEN`이 있으면 **Vercel Blob(private)** 저장 사용
+   - Vercel 배포: `BLOB_READ_WRITE_TOKEN`이 있으면 **Vercel Blob 저장** 사용
+   - `BLOB_ACCESS`(`public`/`private`)로 Blob 접근 타입을 환경변수로 선택
    - 추후 DB(PostgreSQL, Supabase 등)로 교체하기 쉽도록 API 구조 분리.
 
 3. **관리자 대시보드**
@@ -42,6 +43,7 @@ npm run dev
 - `DATA_DIR` (선택, 파일 저장 모드에서만 사용)
 - `BLOB_READ_WRITE_TOKEN` (선택, 설정 시 Vercel Blob 저장 모드 활성화)
 - `BLOB_STORE_PATH` (선택, 기본: `invitation-platform/store.json`)
+- `BLOB_ACCESS` (선택, `public` 또는 `private`, 기본: `private`)
 
 운영 환경에서는 반드시 `ADMIN_KEY`를 변경하세요.
 Vercel 운영에서는 `BLOB_READ_WRITE_TOKEN` 연결을 권장합니다.
@@ -74,12 +76,11 @@ Vercel 운영에서는 `BLOB_READ_WRITE_TOKEN` 연결을 권장합니다.
 ## 보안/운영 메모
 
 - 현재 기본 구조는 JSON 저장 기반이며,
-  Vercel에서는 Blob 토큰이 연결되면 Blob(private) 저장으로 동작합니다.
+  Vercel에서는 Blob 토큰이 연결되면 Blob 저장으로 동작합니다.
 - **Blob 토큰이 없는 Vercel 배포는 `/tmp` 휘발성 저장**이므로 데이터 유실 위험이 큽니다.
 - 트래픽/확장성 관점에서는 PostgreSQL/Supabase 같은 DB 전환을 권장합니다.
 - RSVP API에는 기본적인 IP rate limit이 적용되어 있습니다.
-- 템플릿 이미지는 데모용 에셋(`public/assets`)이며,
-  상용 배포 전 라이선스 정책을 최종 검토하세요.
+- 최신 템플릿은 외부 사진 대신 그라디언트 기반 배경으로 교체해 저작권 리스크를 낮췄습니다.
 
 ---
 

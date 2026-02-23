@@ -59,6 +59,24 @@
     return list.find((item) => item.id === templateId) || list[0];
   }
 
+  function applyTemplateSurface(element, template) {
+    element.style.backgroundImage = "none";
+    element.style.background = template?.background || "#ecf2ff";
+    element.style.backgroundSize = "cover";
+    element.style.backgroundPosition = "center";
+    element.style.backgroundRepeat = "no-repeat";
+
+    if (template?.image) {
+      element.style.backgroundImage = `url('${template.image}')`;
+    }
+
+    if (template?.market) {
+      element.dataset.market = template.market;
+    } else {
+      element.removeAttribute("data-market");
+    }
+  }
+
   function mapLinks(data) {
     const hasCoords = data.coords && Number.isFinite(data.coords.lat) && Number.isFinite(data.coords.lng);
     const query = hasCoords
@@ -106,7 +124,7 @@
     const meta = EVENT_META[data.eventType] || EVENT_META.wedding;
     const template = getTemplate(data.eventType, data.templateId);
 
-    els.hero.style.backgroundImage = `url('${template.image}')`;
+    applyTemplateSurface(els.hero, template);
     els.badge.textContent = meta.badge;
     els.badge.style.background = `${template.accent}cc`;
     els.badge.style.borderColor = template.accent;

@@ -39,6 +39,7 @@ const rsvpRateMap = new Map();
 const DEFAULT_STORE = Object.freeze({ invitations: [], rsvps: [] });
 const USE_BLOB_STORE = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const BLOB_STORE_PATH = process.env.BLOB_STORE_PATH || "invitation-platform/store.json";
+const BLOB_ACCESS = process.env.BLOB_ACCESS === "public" ? "public" : "private";
 
 let storeWriteChain = Promise.resolve();
 
@@ -95,7 +96,7 @@ async function streamToString(stream) {
 async function readStoreFromBlob() {
   try {
     const result = await blobGet(BLOB_STORE_PATH, {
-      access: "private",
+      access: BLOB_ACCESS,
       useCache: false,
     });
 
@@ -121,7 +122,7 @@ async function readStoreFromBlob() {
 async function writeStoreToBlob(store) {
   const normalized = normalizeStore(store);
   await blobPut(BLOB_STORE_PATH, JSON.stringify(normalized, null, 2), {
-    access: "private",
+    access: BLOB_ACCESS,
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
