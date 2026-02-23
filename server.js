@@ -100,6 +100,24 @@ async function streamToString(stream) {
   return Buffer.concat(chunks).toString("utf-8");
 }
 
+function versionTimestampFromPathname(pathname) {
+  const matched = String(pathname || "").match(/\.v(\d+)-/);
+  if (!matched) return 0;
+  const ts = Number(matched[1]);
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+function sortBlobVersionsDesc(a, b) {
+  const aTs = versionTimestampFromPathname(a?.pathname);
+  const bTs = versionTimestampFromPathname(b?.pathname);
+
+  if (aTs !== bTs) return bTs - aTs;
+
+  const aUploaded = new Date(a?.uploadedAt || 0).getTime();
+  const bUploaded = new Date(b?.uploadedAt || 0).getTime();
+  return bUploaded - aUploaded;
+}
+
 async function getLatestBlobPathname() {
   try {
     const listed = await blobList({
@@ -108,9 +126,7 @@ async function getLatestBlobPathname() {
     });
 
     if (Array.isArray(listed.blobs) && listed.blobs.length) {
-      const sorted = listed.blobs
-        .slice()
-        .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      const sorted = listed.blobs.slice().sort(sortBlobVersionsDesc);
       return sorted[0].pathname;
     }
   } catch (_) {
@@ -129,9 +145,7 @@ async function pruneBlobHistory() {
 
     if (!Array.isArray(listed.blobs) || listed.blobs.length <= BLOB_HISTORY_LIMIT) return;
 
-    const sorted = listed.blobs
-      .slice()
-      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    const sorted = listed.blobs.slice().sort(sortBlobVersionsDesc);
 
     const removable = sorted.slice(BLOB_HISTORY_LIMIT).map((item) => item.url);
     if (removable.length) {
