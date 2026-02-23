@@ -411,7 +411,12 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.static(PUBLIC_DIR));
 
 app.get("/health", (_, res) => {
-  res.json({ ok: true, now: nowIso() });
+  res.json({
+    ok: true,
+    now: nowIso(),
+    storeMode: USE_BLOB_STORE ? "blob" : "file",
+    blobAccess: BLOB_ACCESS,
+  });
 });
 
 app.post("/api/invitations", async (req, res) => {
