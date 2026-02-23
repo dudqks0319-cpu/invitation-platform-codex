@@ -11,7 +11,13 @@ const ADMIN_KEY = String(process.env.ADMIN_KEY || "change-me-admin-key");
 
 const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, "public");
-const DATA_DIR = path.join(ROOT_DIR, "data");
+
+const DEFAULT_DATA_DIR = process.env.VERCEL
+  ? "/tmp/invitation-platform-codex-data"
+  : path.join(ROOT_DIR, "data");
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : DEFAULT_DATA_DIR;
 const STORE_PATH = path.join(DATA_DIR, "store.json");
 
 const EVENT_TYPES = new Set(["wedding", "dol", "house", "seventy", "pre"]);
@@ -46,7 +52,13 @@ function ensureStoreFile() {
 function readStore() {
   ensureStoreFile();
   const raw = fs.readFileSync(STORE_PATH, "utf-8");
-  const parsed = JSON.parse(raw || "{}");
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw || "{}");
+  } catch (_) {
+    parsed = { invitations: [], rsvps: [] };
+  }
 
   if (!Array.isArray(parsed.invitations)) parsed.invitations = [];
   if (!Array.isArray(parsed.rsvps)) parsed.rsvps = [];

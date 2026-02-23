@@ -38,6 +38,8 @@ npm run dev
 
 - `PORT` (기본: 3000)
 - `ADMIN_KEY` (기본: `change-me-admin-key`)
+- `DATA_DIR` (선택)
+  - 기본: 로컬은 `./data`, Vercel은 `/tmp/invitation-platform-codex-data`
 
 운영 환경에서는 반드시 `ADMIN_KEY`를 변경하세요.
 
@@ -70,6 +72,8 @@ npm run dev
 
 - 현재 저장소는 **파일 기반 저장(JSON)** 입니다. 단일 서버 MVP에는 적합하지만,
   트래픽 증가 시 DB 이전을 권장합니다.
+- 특히 **Vercel 환경에서는 기본 저장 경로가 `/tmp`(휘발성)** 이라 데이터 영속성이 보장되지 않습니다.
+  운영 배포 시 PostgreSQL/Supabase 같은 영구 저장소 연동이 필수입니다.
 - RSVP API에는 기본적인 IP rate limit이 적용되어 있습니다.
 - 템플릿 이미지는 데모용 에셋(`public/assets`)이며,
   상용 배포 전 라이선스 정책을 최종 검토하세요.
