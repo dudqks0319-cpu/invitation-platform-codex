@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { get: blobGet, put: blobPut } = require("@vercel/blob");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -35,21 +36,100 @@ const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT = 5;
 const rsvpRateMap = new Map();
 
+const DEFAULT_STORE = Object.freeze({ invitations: [], rsvps: [] });
+const USE_BLOB_STORE = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const BLOB_STORE_PATH = process.env.BLOB_STORE_PATH || "invitation-platform/store.json";
+
+let storeWriteChain = Promise.resolve();
+
+function cloneDefaultStore() {
+  return {
+    invitations: [],
+    rsvps: [],
+  };
+}
+
+function normalizeStore(parsed) {
+  const out = parsed && typeof parsed === "object" ? parsed : cloneDefaultStore();
+  if (!Array.isArray(out.invitations)) out.invitations = [];
+  if (!Array.isArray(out.rsvps)) out.rsvps = [];
+  return out;
+}
+
 function ensureStoreFile() {
+  if (USE_BLOB_STORE) return;
+
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
 
   if (!fs.existsSync(STORE_PATH)) {
-    fs.writeFileSync(
-      STORE_PATH,
-      JSON.stringify({ invitations: [], rsvps: [] }, null, 2),
-      "utf-8",
-    );
+    fs.writeFileSync(STORE_PATH, JSON.stringify(DEFAULT_STORE, null, 2), "utf-8");
   }
 }
 
-function readStore() {
+async function streamToString(stream) {
+  if (!stream) return "";
+
+  if (typeof stream.getReader === "function") {
+    const reader = stream.getReader();
+    const chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(Buffer.from(value));
+    }
+
+    return Buffer.concat(chunks).toString("utf-8");
+  }
+
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+async function readStoreFromBlob() {
+  try {
+    const result = await blobGet(BLOB_STORE_PATH, {
+      access: "private",
+      useCache: false,
+    });
+
+    if (!result || !result.stream) {
+      return cloneDefaultStore();
+    }
+
+    const raw = await streamToString(result.stream);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw || "{}");
+    } catch (_) {
+      parsed = cloneDefaultStore();
+    }
+
+    return normalizeStore(parsed);
+  } catch (_) {
+    return cloneDefaultStore();
+  }
+}
+
+async function writeStoreToBlob(store) {
+  const normalized = normalizeStore(store);
+  await blobPut(BLOB_STORE_PATH, JSON.stringify(normalized, null, 2), {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+    cacheControlMaxAge: 0,
+  });
+}
+
+function readStoreFromFile() {
   ensureStoreFile();
   const raw = fs.readFileSync(STORE_PATH, "utf-8");
 
@@ -57,27 +137,50 @@ function readStore() {
   try {
     parsed = JSON.parse(raw || "{}");
   } catch (_) {
-    parsed = { invitations: [], rsvps: [] };
+    parsed = cloneDefaultStore();
   }
 
-  if (!Array.isArray(parsed.invitations)) parsed.invitations = [];
-  if (!Array.isArray(parsed.rsvps)) parsed.rsvps = [];
-
-  return parsed;
+  return normalizeStore(parsed);
 }
 
-function writeStore(store) {
+function writeStoreToFile(store) {
   ensureStoreFile();
+  const normalized = normalizeStore(store);
   const tmp = `${STORE_PATH}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(store, null, 2), "utf-8");
+  fs.writeFileSync(tmp, JSON.stringify(normalized, null, 2), "utf-8");
   fs.renameSync(tmp, STORE_PATH);
 }
 
-function mutateStore(mutator) {
-  const store = readStore();
-  const result = mutator(store);
-  writeStore(store);
-  return result;
+async function readStore() {
+  if (USE_BLOB_STORE) {
+    return readStoreFromBlob();
+  }
+  return readStoreFromFile();
+}
+
+async function writeStore(store) {
+  if (USE_BLOB_STORE) {
+    await writeStoreToBlob(store);
+    return;
+  }
+  writeStoreToFile(store);
+}
+
+async function mutateStore(mutator) {
+  const run = async () => {
+    const store = await readStore();
+    const result = await mutator(store);
+    await writeStore(store);
+    return result;
+  };
+
+  const pending = storeWriteChain.then(run);
+  storeWriteChain = pending.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return pending;
 }
 
 function nowIso() {
@@ -256,7 +359,7 @@ app.get("/health", (_, res) => {
   res.json({ ok: true, now: nowIso() });
 });
 
-app.post("/api/invitations", (req, res) => {
+app.post("/api/invitations", async (req, res) => {
   try {
     const payload = cleanInvitationPayload(req.body);
     const validationError = validateInvitation(payload);
@@ -265,7 +368,7 @@ app.post("/api/invitations", (req, res) => {
       return;
     }
 
-    const result = mutateStore((store) => {
+    const result = await mutateStore((store) => {
       const invitation = {
         id: randomId("inv"),
         slug: uniqueSlug(store.invitations),
@@ -290,28 +393,32 @@ app.post("/api/invitations", (req, res) => {
   }
 });
 
-app.get("/api/invitations/:slug", (req, res) => {
-  const { slug } = req.params;
-  const store = readStore();
-  const invitation = store.invitations.find((it) => it.slug === slug);
+app.get("/api/invitations/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const store = await readStore();
+    const invitation = store.invitations.find((it) => it.slug === slug);
 
-  if (!invitation) {
-    res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
-    return;
+    if (!invitation) {
+      res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
+      return;
+    }
+
+    const summary = summaryForInvitation(store, invitation.id);
+    res.json({
+      ok: true,
+      invitation: {
+        ...invitation,
+        rsvpClosed: isRsvpClosed(invitation),
+        rsvpSummary: summary,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || "초대장 조회 실패" });
   }
-
-  const summary = summaryForInvitation(store, invitation.id);
-  res.json({
-    ok: true,
-    invitation: {
-      ...invitation,
-      rsvpClosed: isRsvpClosed(invitation),
-      rsvpSummary: summary,
-    },
-  });
 });
 
-app.post("/api/invitations/:slug/rsvp", (req, res) => {
+app.post("/api/invitations/:slug/rsvp", async (req, res) => {
   const { slug } = req.params;
   const ip = req.ip || req.socket?.remoteAddress || "unknown";
 
@@ -333,7 +440,7 @@ app.post("/api/invitations/:slug/rsvp", (req, res) => {
   }
 
   try {
-    const result = mutateStore((store) => {
+    const result = await mutateStore((store) => {
       const invitation = store.invitations.find((it) => it.slug === slug);
       if (!invitation) {
         return { error: "초대장을 찾을 수 없습니다.", code: 404 };
@@ -377,7 +484,7 @@ app.post("/api/invitations/:slug/rsvp", (req, res) => {
       return;
     }
 
-    const store = readStore();
+    const store = await readStore();
     const summary = summaryForInvitation(store, result.invitationId);
     res.json({ ok: true, summary });
   } catch (error) {
@@ -385,51 +492,59 @@ app.post("/api/invitations/:slug/rsvp", (req, res) => {
   }
 });
 
-app.get("/api/admin/invitations", requireAdmin, (req, res) => {
-  const store = readStore();
+app.get("/api/admin/invitations", requireAdmin, async (req, res) => {
+  try {
+    const store = await readStore();
 
-  const invitations = store.invitations
-    .slice()
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .map((inv) => {
-      const summary = summaryForInvitation(store, inv.id);
-      return {
-        id: inv.id,
-        slug: inv.slug,
-        eventType: inv.eventType,
-        eventTypeLabel: EVENT_LABELS[inv.eventType] || inv.eventType,
-        title: inv.title,
-        createdAt: inv.createdAt,
-        updatedAt: inv.updatedAt,
-        rsvpSummary: summary,
-        shortUrl: buildPublicUrl(req, inv.slug),
-      };
+    const invitations = store.invitations
+      .slice()
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((inv) => {
+        const summary = summaryForInvitation(store, inv.id);
+        return {
+          id: inv.id,
+          slug: inv.slug,
+          eventType: inv.eventType,
+          eventTypeLabel: EVENT_LABELS[inv.eventType] || inv.eventType,
+          title: inv.title,
+          createdAt: inv.createdAt,
+          updatedAt: inv.updatedAt,
+          rsvpSummary: summary,
+          shortUrl: buildPublicUrl(req, inv.slug),
+        };
+      });
+
+    res.json({
+      ok: true,
+      invitations,
+      securityWarning: ADMIN_KEY === "change-me-admin-key" ? "ADMIN_KEY 기본값 사용 중" : "",
     });
-
-  res.json({
-    ok: true,
-    invitations,
-    securityWarning: ADMIN_KEY === "change-me-admin-key" ? "ADMIN_KEY 기본값 사용 중" : "",
-  });
-});
-
-app.get("/api/admin/invitations/:id", requireAdmin, (req, res) => {
-  const store = readStore();
-  const invitation = store.invitations.find((it) => it.id === req.params.id);
-
-  if (!invitation) {
-    res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
-    return;
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || "관리자 목록 조회 실패" });
   }
-
-  res.json({
-    ok: true,
-    invitation,
-    summary: summaryForInvitation(store, invitation.id),
-  });
 });
 
-app.put("/api/admin/invitations/:id", requireAdmin, (req, res) => {
+app.get("/api/admin/invitations/:id", requireAdmin, async (req, res) => {
+  try {
+    const store = await readStore();
+    const invitation = store.invitations.find((it) => it.id === req.params.id);
+
+    if (!invitation) {
+      res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      invitation,
+      summary: summaryForInvitation(store, invitation.id),
+    });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || "관리자 상세 조회 실패" });
+  }
+});
+
+app.put("/api/admin/invitations/:id", requireAdmin, async (req, res) => {
   const payload = cleanInvitationPayload(req.body);
   const validationError = validateInvitation(payload);
   if (validationError) {
@@ -437,38 +552,46 @@ app.put("/api/admin/invitations/:id", requireAdmin, (req, res) => {
     return;
   }
 
-  const result = mutateStore((store) => {
-    const invitation = store.invitations.find((it) => it.id === req.params.id);
-    if (!invitation) {
-      return null;
+  try {
+    const result = await mutateStore((store) => {
+      const invitation = store.invitations.find((it) => it.id === req.params.id);
+      if (!invitation) {
+        return null;
+      }
+
+      Object.assign(invitation, payload, { updatedAt: nowIso() });
+      return invitation;
+    });
+
+    if (!result) {
+      res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
+      return;
     }
 
-    Object.assign(invitation, payload, { updatedAt: nowIso() });
-    return invitation;
-  });
-
-  if (!result) {
-    res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
-    return;
+    res.json({ ok: true, invitation: result });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || "관리자 수정 실패" });
   }
-
-  res.json({ ok: true, invitation: result });
 });
 
-app.get("/api/admin/invitations/:id/rsvps", requireAdmin, (req, res) => {
-  const store = readStore();
-  const invitation = store.invitations.find((it) => it.id === req.params.id);
+app.get("/api/admin/invitations/:id/rsvps", requireAdmin, async (req, res) => {
+  try {
+    const store = await readStore();
+    const invitation = store.invitations.find((it) => it.id === req.params.id);
 
-  if (!invitation) {
-    res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
-    return;
+    if (!invitation) {
+      res.status(404).json({ ok: false, error: "초대장을 찾을 수 없습니다." });
+      return;
+    }
+
+    const rows = store.rsvps
+      .filter((r) => r.invitationId === invitation.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json({ ok: true, invitation: { id: invitation.id, title: invitation.title }, rsvps: rows });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message || "RSVP 상세 조회 실패" });
   }
-
-  const rows = store.rsvps
-    .filter((r) => r.invitationId === invitation.id)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  res.json({ ok: true, invitation: { id: invitation.id, title: invitation.title }, rsvps: rows });
 });
 
 app.get("/admin", (_, res) => {
@@ -485,6 +608,7 @@ app.get("*", (_, res) => {
 
 app.listen(PORT, () => {
   ensureStoreFile();
+  const mode = USE_BLOB_STORE ? `blob:${BLOB_STORE_PATH}` : `file:${STORE_PATH}`;
   // eslint-disable-next-line no-console
-  console.log(`[invitation-platform-codex] listening on http://localhost:${PORT}`);
+  console.log(`[invitation-platform-codex] listening on http://localhost:${PORT} (${mode})`);
 });
