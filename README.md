@@ -64,12 +64,18 @@ Vercel 운영에서는 `BLOB_READ_WRITE_TOKEN` 연결을 권장합니다.
 - `POST /api/invitations` : 초대장 저장 + slug 생성
 - `GET /api/invitations/:slug` : 초대장 조회
 - `POST /api/invitations/:slug/rsvp` : RSVP 제출
+- `GET /api/health` : API 헬스체크 (`/health` 호환 유지)
 
-### Admin (`x-admin-key` 필요)
+### Admin (`x-admin-key` 헤더 필수)
 - `GET /api/admin/invitations`
 - `GET /api/admin/invitations/:id`
 - `PUT /api/admin/invitations/:id`
 - `GET /api/admin/invitations/:id/rsvps`
+
+관리자 인증은 보안상 `x-admin-key` **헤더만 허용**합니다.
+
+### 에러 응답 형식
+- API 에러는 공통적으로 `{"ok": false, "error": "...", "code": "..."}` 형식을 반환합니다.
 
 ---
 
