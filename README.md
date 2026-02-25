@@ -32,21 +32,48 @@
 ```bash
 npm install
 npm run dev
+npm test
+npm run smoke
 ```
 
 기본 주소: `http://localhost:3000`
 
 ### 환경변수
 
-- `PORT` (기본: 3000)
-- `ADMIN_KEY` (기본: `change-me-admin-key`)
+- `PORT` (선택, 기본: `3000`)
+- `ADMIN_KEY` (**운영 필수**, 기본값 금지)
 - `DATA_DIR` (선택, 파일 저장 모드에서만 사용)
-- `BLOB_READ_WRITE_TOKEN` (선택, 설정 시 Vercel Blob 저장 모드 활성화)
+- `BLOB_READ_WRITE_TOKEN` (Blob 저장 모드 활성화 토큰)
 - `BLOB_STORE_PATH` (선택, 기본: `invitation-platform/store.json`)
 - `BLOB_ACCESS` (선택, `public` 또는 `private`, 기본: `private`)
 
-운영 환경에서는 반드시 `ADMIN_KEY`를 변경하세요.
-Vercel 운영에서는 `BLOB_READ_WRITE_TOKEN` 연결을 권장합니다.
+## Vercel 프로덕션 배포
+
+### 필수 환경변수
+
+- `ADMIN_KEY`: 반드시 강한 임의 값으로 설정
+- `BLOB_READ_WRITE_TOKEN`: 프로덕션 데이터 영속 저장을 위해 필수 권장
+- `BLOB_ACCESS`: 운영 기본값은 `private` 권장 (`public`은 공개 읽기 전제 시에만 사용)
+
+### 저장 모드 선택과 리스크
+
+- Blob 모드 (`BLOB_READ_WRITE_TOKEN` 설정):
+  - 장점: 배포 재시작과 무관한 영속 저장, Vercel 환경에서 운영 가능
+  - 주의: 토큰 유출 시 데이터 노출/변조 위험, `BLOB_ACCESS=public`이면 URL 기반 공개 접근 리스크 존재
+- File 모드 (`BLOB_READ_WRITE_TOKEN` 미설정):
+  - 로컬 개발에는 간단하고 빠름
+  - Vercel에서는 `/tmp` 휘발성 저장이므로 재배포/콜드스타트 시 데이터 유실 가능성 큼
+
+### 배포 후 검증 체크리스트
+
+1. `GET /health`가 `200`이며 `ok: true`인지 확인
+2. `GET /health`의 `storeMode`가 의도한 모드(`blob` 또는 `file`)인지 확인
+3. `/`, `/admin`, `/i/{임의 slug}`가 모두 HTML `200`으로 열리는지 확인
+4. 테스트 초대장 1건 생성 후 조회/RSVP 저장이 정상인지 확인
+5. 운영 관리자 키로 `/api/admin/invitations` 호출 시 인증 성공, 잘못된 키로는 `401`인지 확인
+6. 배포 브랜치에서 `npm test`와 `npm run smoke`가 최신 커밋 기준 통과했는지 확인
+
+기능별 상세 검증 항목은 [`docs/release-checklist.md`](docs/release-checklist.md)를 사용하세요.
 
 ---
 
